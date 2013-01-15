@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from knowledge import settings
 from knowledge.models import Question, Response
 
-OPTIONAL_FIELDS = ['alert', 'phone_number']
+OPTIONAL_FIELDS = ['alert', 'phone_number','body']
 
 
 __todo__ = """
@@ -24,9 +24,9 @@ def QuestionForm(user, *args, **kwargs):
         if not settings.ALLOW_ANONYMOUS:
             return None
         else:
-            selected_fields = ['name', 'email', 'title', 'body']
+            selected_fields = ['name', 'email', 'title', 'body','content_type','object_id','type']
     else:
-        selected_fields = ['user', 'title', 'body', 'status']
+        selected_fields = ['user', 'title', 'body', 'status','type','content_type','object_id']
 
     if settings.ALERTS:
         selected_fields += ['alert']
@@ -49,11 +49,16 @@ def QuestionForm(user, *args, **kwargs):
             # a bit of a hack...
             # hide a field, and use clean to force
             # a specific value of ours
-            for key in ['user']:
+            #'content_type','object_id'
+            for key in ['user','content_type','object_id','status','phone_number','type','body']:
                 qf = self.fields.get(key, None)
                 if qf:
                     qf.widget = qf.hidden_widget()
                     qf.required = False
+
+            # make the form wider for each input:
+            for field in self.fields:
+                self.fields[field].widget.attrs['class'] = 'span7'
 
         # honey pot!
         phone_number = forms.CharField(required=False)
@@ -64,6 +69,8 @@ def QuestionForm(user, *args, **kwargs):
         class Meta:
             model = Question
             fields = selected_fields
+
+
 
     return _QuestionForm(*args, **kwargs)
 
@@ -111,6 +118,9 @@ def ResponseForm(user, question, *args, **kwargs):
                 if qf:
                     qf.widget = qf.hidden_widget()
                     qf.required = False
+
+            for field in self.fields:
+                self.fields[field].widget.attrs['class'] = 'span7'
 
         # honey pot!
         phone_number = forms.CharField(required=False)

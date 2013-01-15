@@ -1,6 +1,8 @@
 from knowledge import settings
 
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 from django.utils.translation import ugettext_lazy as _
 
 from knowledge.managers import QuestionManager, ResponseManager
@@ -16,6 +18,14 @@ STATUSES = (
 STATUSES_EXTENDED = STATUSES + (
     ('inherit', _('Inherit')),
 )
+
+KNOWLEDGE_TYPES = getattr(settings,"KNOWLEDGE_TYPES",False)
+if not KNOWLEDGE_TYPES:
+    KNOWLEDGE_TYPES = (
+        ('ask', _('Challenge')),
+        ('question', _('Question')),
+        ('tip', _('Tip')),        
+    )
 
 
 class Category(models.Model):
@@ -142,17 +152,28 @@ class Question(KnowledgeBase):
     is_question = True
     _requesting_user = None
 
+    content_type = models.ForeignKey(ContentType,blank=True, null=True)
+    object_id = models.PositiveIntegerField(blank=True, null=True)
+    content_object = generic.GenericForeignKey('content_type', 'object_id')
+
     title = models.CharField(max_length=255,
         verbose_name=_('Question'),
-        help_text=_('Enter your question or suggestion.'))
+        )
+    #help_text=_('Enter your question or suggestion.')
     body = models.TextField(blank=True, null=True,
         verbose_name=_('Description'),
-        help_text=_('Please offer details. Markdown enabled.'))
+        )
+    #help_text=_('Please offer details. Markdown enabled.')
 
     status = models.CharField(
         verbose_name=_('Status'),
         max_length=32, choices=STATUSES,
-        default='private', db_index=True)
+        default='public', db_index=True)
+
+    type = models.CharField(
+        verbose_name=_('Type'),
+        max_length=32, choices=KNOWLEDGE_TYPES,
+        default='question', db_index=True)
 
     locked = models.BooleanField(default=False)
 

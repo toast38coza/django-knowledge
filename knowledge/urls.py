@@ -18,5 +18,7 @@ urlpatterns = patterns('knowledge.views',
         r'(?P<lookup_id>\d+)/(?P<mod>[a-zA-Z0-9_]+)/$',
         'knowledge_moderate', name='knowledge_moderate'),
 
-    url(r'^ask/$', 'knowledge_ask', name='knowledge_ask'),
+    url(r'^(?P<action>(?:ask)|(?:challenge)|(?:tip))/(?P<content_type>[a-z0-9-_]+)/(?P<object_id>[a-z0-9-_]+)/$', 'knowledge_ask'),
+    url(r'^(?P<action>(?:ask)|(?:challenge)|(?:tip))/$', 'knowledge_ask'),
+    url(r'^ask/$', 'knowledge_ask', name='knowledge_ask'), #default - need it for reverses
 )

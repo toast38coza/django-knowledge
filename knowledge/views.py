@@ -194,9 +194,26 @@ def knowledge_moderate(
         return redirect(reverse('knowledge_index'))
 
 
-def knowledge_ask(request,
+def knowledge_ask(request,action="ask",content_type=False,object_id=False,
                   template='django_knowledge/ask.html',
                   Form=QuestionForm):
+    
+    initial_data={"type":action}
+
+    action_lookup = {
+        "ask" : {
+            "form_title":"Ask a question",
+            "btn_text":"Ask",
+        },
+        "challenge" : {
+            "form_title":"Challenge",
+            "btn_text":"Challenge",
+        },
+        "tip" : {
+            "form_title":"Leave a tip",
+            "btn_text":"Submit Tip",
+        },
+    }
 
     if settings.LOGIN_REQUIRED and not request.user.is_authenticated():
         return HttpResponseRedirect(settings.LOGIN_URL+"?next=%s" % request.path)
@@ -209,12 +226,15 @@ def knowledge_ask(request,
                 return redirect(question.get_absolute_url())
             else:
                 return redirect('knowledge_index')
-    else:
-        form = Form(request.user)
+    else:        
+        if content_type: initial_data['content_type'] = content_type
+        if object_id: initial_data['object_id'] = object_id
+        form = Form(request.user, initial=initial_data)
 
     return render(request, template, {
         'request': request,
         'my_questions': get_my_questions(request),
         'form': form,
-        'categories': Category.objects.all()
+        'categories': Category.objects.all(),
+        'form_content' : action_lookup.get(action)
     })
