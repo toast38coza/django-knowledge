@@ -24,9 +24,9 @@ def QuestionForm(user, *args, **kwargs):
         if not settings.ALLOW_ANONYMOUS:
             return None
         else:
-            selected_fields = ['name', 'email', 'title', 'body','content_type','object_id','type']
+            selected_fields = ['name', 'email', 'title', 'body','content_type','object_id','type','alert']
     else:
-        selected_fields = ['user', 'title', 'body', 'status','type','content_type','object_id']
+        selected_fields = ['user', 'title', 'body', 'status','type','content_type','object_id','alert']
 
     if settings.ALERTS:
         selected_fields += ['alert']
@@ -61,7 +61,7 @@ def QuestionForm(user, *args, **kwargs):
                 self.fields[field].widget.attrs['class'] = 'span7'
 
         # honey pot!
-        phone_number = forms.CharField(required=False)
+        # phone_number = forms.CharField(required=False)
 
         def clean_user(self):
             return user
@@ -113,7 +113,7 @@ def ResponseForm(user, question, *args, **kwargs):
                     self.fields[key].required = True
 
             # a bit of a hack...
-            for key in ['user', 'question']:
+            for key in ['user', 'question','status']:
                 qf = self.fields.get(key, None)
                 if qf:
                     qf.widget = qf.hidden_widget()
@@ -123,7 +123,7 @@ def ResponseForm(user, question, *args, **kwargs):
                 self.fields[field].widget.attrs['class'] = 'span7'
 
         # honey pot!
-        phone_number = forms.CharField(required=False)
+        # phone_number = forms.CharField(required=False)
 
         def clean_user(self):
             return user
