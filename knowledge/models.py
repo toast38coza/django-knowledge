@@ -22,7 +22,8 @@ STATUSES_EXTENDED = STATUSES + (
 KNOWLEDGE_TYPES = getattr(settings,"KNOWLEDGE_TYPES",False)
 if not KNOWLEDGE_TYPES:
     KNOWLEDGE_TYPES = (
-        ('ask', _('Challenge')),
+        ('challenge', _('Challenge')),
+        ('ask', _('Ask')),
         ('question', _('Question')),
         ('tip', _('Tip')),        
     )
