@@ -235,6 +235,8 @@ def knowledge_ask(request,action="ask",content_type=False,object_id=False,
         'request': request,
         'my_questions': get_my_questions(request),
         'form': form,
+        "action": action,
         'categories': Category.objects.all(),
+        "action_lookup" : action_lookup,
         'form_content' : action_lookup.get(action)
     })

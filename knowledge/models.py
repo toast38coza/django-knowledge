@@ -24,7 +24,6 @@ if not KNOWLEDGE_TYPES:
     KNOWLEDGE_TYPES = (
         ('challenge', _('Challenge')),
         ('ask', _('Ask')),
-        ('question', _('Question')),
         ('tip', _('Tip')),        
     )
 
@@ -57,7 +56,7 @@ class KnowledgeBase(models.Model):
     user = models.ForeignKey('auth.User', blank=True,
                              null=True, db_index=True)
     alert = models.BooleanField(default=settings.ALERTS,
-        verbose_name=_('Alert'),
+        verbose_name=_('Tell me when responses are added to my question'),
         help_text=_('Check this if you want to be alerted when a new'
                         ' response is added.'))
 

@@ -2,7 +2,7 @@ from django import forms
 from django.utils.translation import ugettext_lazy as _
 
 from knowledge import settings
-from knowledge.models import Question, Response
+from knowledge.models import Question, Response, KNOWLEDGE_TYPES
 
 OPTIONAL_FIELDS = ['alert', 'phone_number','body']
 
@@ -35,6 +35,9 @@ def QuestionForm(user, *args, **kwargs):
         def __init__(self, *args, **kwargs):
             super(_QuestionForm, self).__init__(*args, **kwargs)
 
+            self.KNOWLEDGE_TYPES = KNOWLEDGE_TYPES
+            self.FORM_NAME = 'question'
+
             for key in self.fields:
                 if not key in OPTIONAL_FIELDS:
                     self.fields[key].required = True
@@ -50,7 +53,7 @@ def QuestionForm(user, *args, **kwargs):
             # hide a field, and use clean to force
             # a specific value of ours
             #'content_type','object_id'
-            for key in ['user','content_type','object_id','status','phone_number','type','body']:
+            for key in ['user','content_type','object_id','status','phone_number','type']:
                 qf = self.fields.get(key, None)
                 if qf:
                     qf.widget = qf.hidden_widget()
@@ -121,6 +124,8 @@ def ResponseForm(user, question, *args, **kwargs):
 
             for field in self.fields:
                 self.fields[field].widget.attrs['class'] = 'span7'
+
+                self.FORM_NAME = 'response'
 
         # honey pot!
         # phone_number = forms.CharField(required=False)
