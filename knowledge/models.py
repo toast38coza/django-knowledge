@@ -1,12 +1,15 @@
 from knowledge import settings
 
+import django
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.utils.translation import ugettext_lazy as _
+from django.conf import settings as django_settings
 
 from knowledge.managers import QuestionManager, ResponseManager
 from knowledge.signals import knowledge_post_save
+from django.db.models import Count
 
 STATUSES = (
     ('public', _('Public')),
@@ -53,7 +56,7 @@ class KnowledgeBase(models.Model):
     added = models.DateTimeField(auto_now_add=True)
     lastchanged = models.DateTimeField(auto_now=True)
 
-    user = models.ForeignKey('auth.User', blank=True,
+    user = models.ForeignKey('auth.User' if django.VERSION < (1, 5, 0) else django_settings.AUTH_USER_MODEL, blank=True,
                              null=True, db_index=True)
     alert = models.BooleanField(default=settings.ALERTS,
         verbose_name=_('Tell me when responses are added to my question'),
@@ -91,11 +94,13 @@ class KnowledgeBase(models.Model):
         Get local name, then self.user's first/last, and finally
         their username if all else fails.
         """
-        name = (self.name or u'{0} {1}'.format(
-            self.user.first_name, self.user.last_name))
-        return name.strip() or self.user.username
+        name = (self.name or (self.user and (
+            u'{0} {1}'.format(self.user.first_name, self.user.last_name).strip()\
+            or self.user.username
+        )))
+        return name.strip() or _("Anonymous")
 
-    get_email = lambda s: s.email or s.user.email
+    get_email = lambda s: s.email or (s.user and s.user.email)
     get_pair = lambda s: (s.get_name(), s.get_email())
     get_user_or_pair = lambda s: s.user or s.get_pair()
 
@@ -130,6 +135,7 @@ class KnowledgeBase(models.Model):
         self.status = status
         if save:
             self.save()
+    switch.alters_data = True
 
     def public(self, save=True):
         self.switch('public', save)
@@ -217,9 +223,9 @@ class Question(KnowledgeBase):
     def get_responses(self, user=None):
         user = user or self._requesting_user
         if user:
-            return [r for r in self.responses.all() if r.can_view(user)]
+            return [r for r in self.responses.all().select_related('user') if r.can_view(user)]
         else:
-            return self.responses.all()
+            return self.responses.all().select_related('user')
 
     def answered(self):
         """
@@ -258,6 +264,14 @@ class Question(KnowledgeBase):
         Handy for checking for mod bar button state.
         """
         return [self.status, 'lock' if self.locked else None]
+
+    ### some filter methods:
+    @staticmethod
+    def unanswered(resultset):
+        """
+        Filter a set of responses to only show unanswered
+        """
+        return resultset.annotate(num_responses=Count('responses')).filter(num_responses=0) #note: this might get heavy on the DB. keeping a list of unanswered ids in redis would be less loady
 
     @property
     def url(self):

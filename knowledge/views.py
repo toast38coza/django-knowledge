@@ -8,7 +8,7 @@ from django.db.models import Q
 from knowledge.models import Question, Response, Category
 from knowledge.forms import QuestionForm, ResponseForm
 from knowledge.utils import paginate
-
+from django.db.models import Count
 
 ALLOWED_MODS = {
     'question': [
@@ -42,10 +42,12 @@ def knowledge_index(request,
     if settings.LOGIN_REQUIRED and not request.user.is_authenticated():
         return HttpResponseRedirect(settings.LOGIN_URL+"?next=%s" % request.path)
 
+
     questions = Question.objects.can_view(request.user)\
                                 .prefetch_related('responses__question')[0:20]
     # this is for get_responses()
     [setattr(q, '_requesting_user', request.user) for q in questions]
+    
 
     return render(request, template, {
         'request': request,
@@ -60,10 +62,12 @@ def knowledge_list(request,
                    template='django_knowledge/list.html',
                    Form=QuestionForm):
 
+
     if settings.LOGIN_REQUIRED and not request.user.is_authenticated():
         return HttpResponseRedirect(settings.LOGIN_URL+"?next=%s" % request.path)
 
     search = request.GET.get('title', None)
+    order = request.GET.get('o', None)    
     questions = Question.objects.can_view(request.user)\
                                 .prefetch_related('responses__question')
 
@@ -71,6 +75,10 @@ def knowledge_list(request,
         questions = questions.filter(
             Q(title__icontains=search) | Q(body__icontains=search)
         )
+
+    ## filters:
+    if request.GET.get("unanswered"):
+        questions = Question.unanswered(questions)
 
     category = None
     if category_slug:
