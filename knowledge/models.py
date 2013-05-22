@@ -6,10 +6,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
+from django.shortcuts import render
 
 from knowledge.managers import QuestionManager, ResponseManager
 from knowledge.signals import knowledge_post_save
 from django.db.models import Count
+from django.core.urlresolvers import reverse
 
 STATUSES = (
     ('public', _('Public')),
@@ -185,6 +187,8 @@ class Question(KnowledgeBase):
 
     categories = models.ManyToManyField('knowledge.Category', blank=True)
 
+    redirect = models.CharField(blank=True,null=True,max_length=200)
+
     objects = QuestionManager()
 
     class Meta:
@@ -243,6 +247,41 @@ class Question(KnowledgeBase):
     def clear_accepted(self):
         self.get_responses().update(accepted=False)
     clear_accepted.alters_data = True
+
+    def merge(self, response=None):
+
+        session = self.request.session.get('merge_question', False)
+        if not session: # not in merge mode, then we're choosing the question to merge with
+            self.request.session['merge_question'] = True
+            self.request.session['merge_question_pk'] = self.pk
+            self.request.session['merge_question_title'] = self.title
+        else:
+
+            if self.request.session['merge_question_pk'] == self.pk: return False
+
+            parent_question = Question.objects.get(pk=self.request.session['merge_question_pk'])
+            child_question = self
+
+            # move responses over:
+            for response in child_question.responses.all():
+                response.pk=None
+                response.question = parent_question
+                response.save()
+                child_question.redirect = parent_question.get_absolute_url()
+                child_question.save()
+
+                ## todo: email
+            
+
+        
+    def clear_merge(self):
+
+        try:
+            del self.request.session['merge_question']
+            del self.request.session['merge_question_pk'] 
+            del self.request.session['merge_question_title']
+        except KeyError:
+            pass
 
     def accept(self, response=None):
         """

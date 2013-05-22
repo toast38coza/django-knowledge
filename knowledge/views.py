@@ -8,13 +8,13 @@ from django.db.models import Q
 from knowledge.models import Question, Response, Category
 from knowledge.forms import QuestionForm, ResponseForm
 from knowledge.utils import paginate
-from django.db.models import Count
+
 
 ALLOWED_MODS = {
     'question': [
         'private', 'public',
         'delete', 'lock',
-        'clear_accepted'
+        'clear_accepted', 'merge', 'clear_merge'
     ],
     'response': [
         'internal', 'inherit',
@@ -121,6 +121,10 @@ def knowledge_thread(request,
         else:
             raise Http404
 
+
+    if question.redirect:
+        return HttpResponseRedirect(question.redirect)
+
     responses = question.get_responses(request.user)
 
     if request.path != question.get_absolute_url():
@@ -168,7 +172,7 @@ def knowledge_moderate(
 
     if settings.LOGIN_REQUIRED and not request.user.is_authenticated():
         return HttpResponseRedirect(settings.LOGIN_URL+"?next=%s" % request.path)
-
+    
     if request.method != 'POST':
         raise Http404
 
@@ -188,6 +192,9 @@ def knowledge_moderate(
     instance = get_object_or_404(
         Model.objects.can_view(request.user),
         id=lookup_id)
+
+
+    instance.request = request # set the request on the model instance
 
     func = getattr(instance, mod)
     if callable(func):
