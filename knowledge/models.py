@@ -282,7 +282,7 @@ class Question(KnowledgeBase):
             site = Site.objects.get_current()
             user = child_question.user
             subject = "Your question: %s" % child_question.title
-            domain = settings.CANONICALDOMAN
+                        
             context = { 
                 "cq" : child_question,
                 "pq" : parent_question,
