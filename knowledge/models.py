@@ -15,6 +15,7 @@ from django.db.models import Count
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.contrib.sites.models import Site
 
 STATUSES = (
     ('public', _('Public')),
@@ -265,23 +266,28 @@ class Question(KnowledgeBase):
             parent_question = Question.objects.get(pk=self.request.session['merge_question_pk'])
             child_question = self
 
+            child_question.redirect = parent_question.get_absolute_url()
+            child_question.save()
+            
             # move responses over:
             for response in child_question.responses.all():
                 response.pk=None
                 response.question = parent_question
                 response.save()
-                child_question.redirect = parent_question.get_absolute_url()
-                child_question.save()
+                
 
                 ## todo: email
 
             # emails
+            site = Site.objects.get_current()
             user = child_question.user
             subject = "Your question: %s" % child_question.title
+            domain = settings.CANONICALDOMAN
             context = { 
                 "cq" : child_question,
                 "pq" : parent_question,
                 "user" : user,
+                "site" : site,
                 "site_name" : getattr(config,"SITE_NAME")
             }
             message = render_to_string('django_knowledge/emails/merge-message.txt', context)
