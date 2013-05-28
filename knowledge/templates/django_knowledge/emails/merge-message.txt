@@ -1,0 +1,12 @@
+Hi {{user_full_name}} 
+
+It looks like the question you asked: 
+
+{{qq.title}}
+
+Has already been answered. You can see the answer to your question here:
+
+{{pq.get_absolute_url}}
+
+All the best,
+The {{site_name}} Support Team 

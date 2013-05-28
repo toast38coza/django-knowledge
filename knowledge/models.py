@@ -7,11 +7,14 @@ from django.contrib.contenttypes import generic
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
 from django.shortcuts import render
+from constance import config
 
 from knowledge.managers import QuestionManager, ResponseManager
 from knowledge.signals import knowledge_post_save
 from django.db.models import Count
 from django.core.urlresolvers import reverse
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
 
 STATUSES = (
     ('public', _('Public')),
@@ -271,8 +274,22 @@ class Question(KnowledgeBase):
                 child_question.save()
 
                 ## todo: email
-            
 
+            # emails
+            user = child_question.user
+            subject = "Your question: %s" % child_question.title
+            context = { 
+                "cq" : child_question,
+                "pq" : parent_question,
+                "user" : user,
+                "site_name" : getattr(config,"SITE_NAME")
+            }
+            message = render_to_string('django_knowledge/emails/merge-message.txt', context)
+            to = user.email
+            frm = getattr(django_settings,'DEFAULT_FROM_EMAIL')
+            send_mail(subject, message, frm,
+                [to], fail_silently=False)
+            
         
     def clear_merge(self):
 
